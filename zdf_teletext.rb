@@ -57,26 +57,31 @@ class ZDFTeletext
   end
 
   ##
-  # Checks if the html contains a table
-  def check_table(html) # TODO maybe replace with "check_menu_table"?
-    if html.at_css("table")
+  # Checks if the html contains an overview table
+  def check_overview_table(html)
+    if html.at_css("table.link_button") 
       true
     else
       false
     end
   end
 
+  def extract_rows_from_table(html)
+    rows = Array.new
+    html.search('table').each do |table|
+      table.search('tr').each do |tr|
+        cells = tr.search('th, td')
+        rows.push({:Seite => cells[0].text.strip, :Nummer => cells[1].text.strip})
+      end
+    end
+    return rows
+  end
+
   ##
   # Checks html for tables and prints them using formatador 
   def parse_table(html)
-    if check_table(html)
-      rows = Array.new
-      html.search('table').each do |table|
-        table.search('tr').each do |tr|
-          cells = tr.search('th, td')
-          rows.push({:Seite => cells[0].text.strip, :Nummer => cells[1].text.strip})
-        end
-      end
+    if check_overview_table(html)
+      rows = extract_rows_from_table(html)
       Formatador.display_table(rows)
     end
   end
@@ -106,7 +111,7 @@ class ZDFTeletext
   # Prints the formatted Teletext to terminal
   def teletext_print_response(html)
     body = cleanup_body(html)
-    if check_table(body)
+    if check_overview_table(body)
       puts parse_table(body) 
     else
       puts body.text.gsub(/\n(\s*\n)+/,"\n").gsub(/\t+/, "")
